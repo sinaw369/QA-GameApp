@@ -14,11 +14,18 @@ type PossibleAnswer struct {
 	Choice PossibleAnswerChoice
 }
 type QuestionDifficulty uint8
+type PossibleAnswerChoice uint8
 
 const (
 	QuestionDifficultyEasy QuestionDifficulty = iota + 1
 	QuestionDifficultyMedium
 	QuestionDifficultyHard
+)
+const (
+	PossibleAnswerA PossibleAnswerChoice = iota + 1
+	PossibleAnswerB
+	PossibleAnswerC
+	PossibleAnswerD
 )
 
 func (q QuestionDifficulty) IsValid() bool {
@@ -29,8 +36,6 @@ func (q QuestionDifficulty) IsValid() bool {
 
 }
 
-type PossibleAnswerChoice uint8
-
 func (p PossibleAnswerChoice) IsValid() bool {
 	if p >= PossibleAnswerA && p <= PossibleAnswerD {
 		return true
@@ -38,10 +43,3 @@ func (p PossibleAnswerChoice) IsValid() bool {
 	return false
 
 }
-
-const (
-	PossibleAnswerA PossibleAnswerChoice = iota + 1
-	PossibleAnswerB
-	PossibleAnswerC
-	PossibleAnswerD
-)
