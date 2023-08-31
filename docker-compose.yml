@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  databases:
+    image: mysql
+    ports:
+      - "3306:3306"
+    container_name: QA-GameAppDatabase
+    volumes:
+      - dbdata:/var/lib/mysql
+    restart: always
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: gameapp_db
+      MYSQL_USER: gameapp
+      MYSQL_PASSWORD: some_example
+
+volumes:
+  dbdata:
