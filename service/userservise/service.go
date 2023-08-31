@@ -10,7 +10,7 @@ type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(u entity.User) (entity.User, error)
 }
-type UserService struct {
+type Service struct {
 	repo Repository
 }
 
@@ -22,7 +22,11 @@ type RegisterResponse struct {
 	User entity.User
 }
 
-func (s *UserService) Register(req RegisterRequest) (RegisterResponse, error) {
+func New(repo Repository) *Service {
+	return &Service{repo: repo}
+}
+
+func (s *Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	// TODO: we should verify phone number by verification code
 	//validate phoneNumber
 	if !phoneNumber.IsValid(req.PhoneNumber) {
