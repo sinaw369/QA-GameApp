@@ -4,5 +4,6 @@ type User struct {
 	ID          uint
 	PhoneNumber string
 	Name        string
-	Avatar      string
+	// Password always keeps the hashes password
+	Password string
 }
