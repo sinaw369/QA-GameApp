@@ -6,8 +6,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
-	"time"
 )
 
 type Repository interface {
@@ -16,9 +14,13 @@ type Repository interface {
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
 	GetUserByID(userID uint) (entity.User, error)
 }
+type AuthGenerator interface {
+	CreateAccessToken(user entity.User) (string, error)
+	CreateRefreshToken(user entity.User) (string, error)
+}
 type Service struct {
-	repo    Repository
-	signKey string
+	repo Repository
+	auth AuthGenerator
 }
 
 type RegisterRequest struct {
@@ -26,15 +28,20 @@ type RegisterRequest struct {
 	PhoneNumber string `json:"phone_number"`
 	Password    string `json:"password"`
 }
+type RegisterResponseUser struct {
+	ID          uint   `json:"id"`
+	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name"`
+}
 type RegisterResponse struct {
-	User entity.User
+	User RegisterResponseUser `json:"user"`
 }
 
-func New(repo Repository, signKey string) *Service {
-	return &Service{repo: repo, signKey: signKey}
+func New(authGenerator AuthGenerator, repo Repository) Service {
+	return Service{auth: authGenerator, repo: repo}
 }
 
-func (s *Service) Register(req RegisterRequest) (RegisterResponse, error) {
+func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	// TODO: we should verify phone number by verification code
 	//validate phoneNumber
 	if !phoneNumber.IsValid(req.PhoneNumber) {
@@ -73,9 +80,11 @@ func (s *Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	//return create new user
-	return RegisterResponse{
-		User: createdUser,
-	}, nil
+	return RegisterResponse{RegisterResponseUser{
+		ID:          createdUser.ID,
+		Name:        createdUser.Name,
+		PhoneNumber: createdUser.PhoneNumber,
+	}}, nil
 
 }
 
@@ -84,10 +93,11 @@ type LoginRequest struct {
 	Password    string `json:"password"`
 }
 type LoginResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
-func (s *Service) Login(req LoginRequest) (LoginResponse, error) {
+func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	//check the existing of phone number from repository
 	//get user by phone number
 	// TODO: it would be better to user two separate methods for existence
@@ -105,12 +115,16 @@ func (s *Service) Login(req LoginRequest) (LoginResponse, error) {
 	//compare user.password whit the req.password
 	//---//
 	// jwt token
-	token, err := createToken(user.ID, s.signKey)
+	AccessToken, err := s.auth.CreateAccessToken(user)
+	if err != nil {
+		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	RefreshToken, err := s.auth.CreateRefreshToken(user)
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	//return ok
-	return LoginResponse{AccessToken: token}, nil
+	return LoginResponse{AccessToken: AccessToken, RefreshToken: RefreshToken}, nil
 
 }
 func GetMd5(text string) string {
@@ -127,7 +141,7 @@ type ProfileResponse struct {
 
 // All Requests inputs for interactor / service should sanitize
 
-func (s *Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
 	// getUserByID
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
@@ -135,30 +149,4 @@ func (s *Service) Profile(req ProfileRequest) (ProfileResponse, error) {
 		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	return ProfileResponse{Name: user.Name}, nil
-}
-
-type Claims struct {
-	RegisteredClaims jwt.RegisteredClaims
-	UserID           uint
-}
-
-func (c Claims) Valid() error {
-	return nil
-}
-func createToken(userID uint, signKey string) (string, error) {
-	//create a new token
-	// TODO : replace with rsa256 - https://github.com/golang-jwt/jwt/
-	//see our claims
-	Claims := Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
-		},
-		UserID: userID,
-	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims)
-	tokenString, err := accessToken.SignedString([]byte(signKey))
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
 }
