@@ -3,6 +3,7 @@ package userservise
 import (
 	"Q/A-GameApp/entity"
 	"Q/A-GameApp/pkg/phoneNumber"
+	"Q/A-GameApp/pkg/richerror"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -102,12 +103,13 @@ type LoginResponse struct {
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
+	const op = "userService.login"
 	//check the existing of phone number from repository
 	//get user by phone number
 	// TODO: it would be better to user two separate methods for existence
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return LoginResponse{}, richerror.New(op).WhitWarpError(err).WhitMeta(map[string]interface{}{"Phone_number": req.PhoneNumber})
 	}
 	if !exist {
 		return LoginResponse{}, fmt.Errorf("username or password isn't correct")
@@ -156,11 +158,13 @@ type ProfileResponse struct {
 // All Requests inputs for interactor / service should sanitize
 
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+	const op = "userService.profile"
 	// getUserByID
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
-		// TODO : we can use rich error
-		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return ProfileResponse{}, richerror.New(op).
+			WhitWarpError(err).
+			WhitMeta(map[string]interface{}{"request": req})
 	}
 	return ProfileResponse{Name: user.Name}, nil
 }

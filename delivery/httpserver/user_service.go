@@ -1,7 +1,9 @@
 package httpserver
 
 import (
+	"Q/A-GameApp/pkg/httpmsg"
 	"Q/A-GameApp/service/userservise"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -28,15 +30,18 @@ func (s Server) userLogin(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
-func (s Server) Profile(ctx echo.Context) error {
+func (s Server) userProfile(ctx echo.Context) error {
 	authToken := ctx.Request().Header.Get("Authorization")
-	claims, err := s.authSvc.VarifyToken(authToken)
+	fmt.Println(authToken)
+	claims, err := s.authSvc.VerifyToken(authToken)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		msg, code := httpmsg.Error(err)
+		return echo.NewHTTPError(code, msg)
 	}
 	resp, err := s.userSvc.Profile(userservise.ProfileRequest{UserID: claims.UserID})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		msg, code := httpmsg.Error(err)
+		return echo.NewHTTPError(code, msg)
 	}
 	return ctx.JSON(http.StatusOK, resp)
 }

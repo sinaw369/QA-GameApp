@@ -2,8 +2,11 @@ package mysql
 
 import (
 	"Q/A-GameApp/entity"
+	"Q/A-GameApp/pkg/errmsg"
+	"Q/A-GameApp/pkg/richerror"
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 func (d *MySqlDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
@@ -20,7 +23,8 @@ func (d *MySqlDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 func (d *MySqlDB) Register(u entity.User) (entity.User, error) {
 	res, err := d.db.Exec(`insert into users(name, phone_number,password) value (?, ?, ?)`, u.Name, u.PhoneNumber, u.Password)
 	if err != nil {
-		return entity.User{}, fmt.Errorf("can't execute command: %w", err)
+		return entity.User{}, richerror.New("mysql.Register").WhitMessage("can't execute command:").WhitWarpError(err).WhitKind(richerror.KindUnexpected)
+
 	}
 	// err is always nil
 	id, _ := res.LastInsertId()
@@ -34,7 +38,7 @@ func (d *MySqlDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, e
 		if err == sql.ErrNoRows {
 			return entity.User{}, false, nil
 		}
-		return entity.User{}, false, fmt.Errorf("can't scan query result:%w", err)
+		return entity.User{}, false, richerror.New("mysql.GetUserByPhoneNumber").WhitMessage(errmsg.ErrorMsgCantQuery).WhitKind(richerror.KindNotFound)
 	}
 	return user, true, nil
 }
@@ -44,15 +48,15 @@ func (d *MySqlDB) GetUserByID(userID uint) (entity.User, error) {
 	user, err := scanUser(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entity.User{}, fmt.Errorf("record not found:%w", err)
+			return entity.User{}, richerror.New("mysql.GetUserByID").WhitMessage(errmsg.ErrorMsgNotFound).WhitWarpError(err).WhitKind(richerror.KindNotFound)
 		}
-		return entity.User{}, fmt.Errorf("can't scan query result:%w", err)
+		return entity.User{}, richerror.New("mysql.GetUserByID").WhitMessage(errmsg.ErrorMsgCantQuery).WhitWarpError(err).WhitKind(richerror.KindUnexpected)
 	}
 	return user, nil
 
 }
 func scanUser(row *sql.Row) (entity.User, error) {
-	var createdAt []uint8
+	var createdAt time.Time
 	var user entity.User
 	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.Password, &createdAt)
 	if err != nil {

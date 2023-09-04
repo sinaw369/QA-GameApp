@@ -21,7 +21,10 @@ type MySqlDB struct {
 }
 
 func New(config Config) *MySqlDB {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s:%d)/%s",
+	//parseTime  ture changes the output type if DATE and DATETIME values to time.time
+	// instead of []byte / string
+	// The date or datetime like 0000-00-00 00:00:00 is converted into zero value of time.time
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s:%d)/%s?parseTime=true",
 		config.UserName, config.Password, config.Host, config.Port, config.Scheme))
 	if err != nil {
 		panic(fmt.Errorf("error creating database: %v", err))

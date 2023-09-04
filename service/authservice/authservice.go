@@ -30,8 +30,8 @@ func (s Service) CreateAccessToken(user entity.User) (string, error) {
 func (s Service) CreateRefreshToken(user entity.User) (string, error) {
 	return s.createToken(user.ID, s.config.RefreshSubject, s.config.RefreshExpirationTime)
 }
-func (s Service) VarifyToken(tokenStr string) (*Claims, error) {
-	strings.Replace(tokenStr, "Bearer", "", 1)
+func (s Service) VerifyToken(tokenStr string) (*Claims, error) {
+	tokenStr = strings.Replace(tokenStr, "Bearer ", "", 1)
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.config.SignKey), nil
 	})
