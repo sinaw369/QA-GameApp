@@ -28,13 +28,13 @@ type RegisterRequest struct {
 	PhoneNumber string `json:"phone_number"`
 	Password    string `json:"password"`
 }
-type RegisterResponseUser struct {
+type UserInfo struct {
 	ID          uint   `json:"id"`
 	PhoneNumber string `json:"phone_number"`
 	Name        string `json:"name"`
 }
 type RegisterResponse struct {
-	User RegisterResponseUser `json:"user"`
+	User UserInfo `json:"user"`
 }
 
 func New(authGenerator AuthGenerator, repo Repository) Service {
@@ -80,7 +80,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	//return create new user
-	return RegisterResponse{RegisterResponseUser{
+	return RegisterResponse{UserInfo{
 		ID:          createdUser.ID,
 		Name:        createdUser.Name,
 		PhoneNumber: createdUser.PhoneNumber,
@@ -92,9 +92,13 @@ type LoginRequest struct {
 	PhoneNumber string `json:"phone_number"`
 	Password    string `json:"password"`
 }
-type LoginResponse struct {
+type Token struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+}
+type LoginResponse struct {
+	User   UserInfo `json:"user"`
+	Tokens Token    `json:"token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -124,7 +128,17 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	//return ok
-	return LoginResponse{AccessToken: AccessToken, RefreshToken: RefreshToken}, nil
+	return LoginResponse{
+		User: UserInfo{
+			ID:          user.ID,
+			PhoneNumber: user.PhoneNumber,
+			Name:        user.Name,
+		},
+		Tokens: Token{
+			RefreshToken: RefreshToken,
+			AccessToken:  AccessToken,
+		},
+	}, nil
 
 }
 func GetMd5(text string) string {
