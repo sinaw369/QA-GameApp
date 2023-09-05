@@ -4,22 +4,25 @@ import (
 	"Q/A-GameApp/config"
 	"Q/A-GameApp/service/authservice"
 	"Q/A-GameApp/service/userservise"
+	"Q/A-GameApp/validator/uservalidator"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
-	config  config.Config
-	authSvc authservice.Service
-	userSvc userservise.Service
+	config        config.Config
+	authSvc       authservice.Service
+	userSvc       userservise.Service
+	uservalidator uservalidator.Validator
 }
 
-func New(config config.Config, authSvc authservice.Service, userSvc userservise.Service) Server {
+func New(config config.Config, authSvc authservice.Service, userSvc userservise.Service, uservalidator uservalidator.Validator) Server {
 	return Server{
-		config:  config,
-		authSvc: authSvc,
-		userSvc: userSvc,
+		config:        config,
+		authSvc:       authSvc,
+		userSvc:       userSvc,
+		uservalidator: uservalidator,
 	}
 }
 func (s Server) Server() {

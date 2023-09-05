@@ -6,6 +6,7 @@ import (
 	"Q/A-GameApp/repository/mysql"
 	"Q/A-GameApp/service/authservice"
 	"Q/A-GameApp/service/userservise"
+	"Q/A-GameApp/validator/uservalidator"
 	"time"
 )
 
@@ -17,11 +18,12 @@ const (
 	RefreshTokenExpireDuration = time.Hour * 24 * 7
 )
 
-func setupServices(cfg config.Config) (authservice.Service, userservise.Service) {
+func setupServices(cfg config.Config) (authservice.Service, userservise.Service, uservalidator.Validator) {
 	authSvc := authservice.New(cfg.Auth)
 	mysqlRepo := mysql.New(cfg.Mysql)
+	validateUserSvc := uservalidator.New(mysqlRepo)
 	userSvc := userservise.New(authSvc, mysqlRepo)
-	return authSvc, userSvc
+	return authSvc, userSvc, validateUserSvc
 }
 func main() {
 	cfg := config.Config{
@@ -42,7 +44,8 @@ func main() {
 		},
 	}
 
-	authSvc, userSvc := setupServices(cfg)
-	server := httpserver.New(cfg, authSvc, userSvc)
+	authSvc, userSvc, validateUsersvc := setupServices(cfg)
+
+	server := httpserver.New(cfg, authSvc, userSvc, validateUsersvc)
 	server.Server()
 }

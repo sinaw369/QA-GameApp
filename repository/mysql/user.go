@@ -5,7 +5,6 @@ import (
 	"Q/A-GameApp/pkg/errmsg"
 	"Q/A-GameApp/pkg/richerror"
 	"database/sql"
-	"fmt"
 	"time"
 )
 
@@ -16,7 +15,8 @@ func (d *MySqlDB) IsPhoneNumberUnique(phoneNumber string) (bool, error) {
 		if err == sql.ErrNoRows {
 			return true, nil
 		}
-		return false, fmt.Errorf("can't scan query result:%w", err)
+		return false, richerror.New("mysql.IsPhoneNumberUnique").WhitWarpError(err).
+			WhitMessage(errmsg.ErrorMsgCantQuery).WhitKind(richerror.KindUnexpected)
 	}
 	return false, nil
 }

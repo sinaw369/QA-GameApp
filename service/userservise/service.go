@@ -1,8 +1,8 @@
 package userservise
 
 import (
+	"Q/A-GameApp/dto"
 	"Q/A-GameApp/entity"
-	"Q/A-GameApp/pkg/phoneNumber"
 	"Q/A-GameApp/pkg/richerror"
 	"crypto/md5"
 	"encoding/hex"
@@ -10,7 +10,6 @@ import (
 )
 
 type Repository interface {
-	IsPhoneNumberUnique(phoneNumber string) (bool, error)
 	Register(u entity.User) (entity.User, error)
 	GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error)
 	GetUserByID(userID uint) (entity.User, error)
@@ -24,50 +23,12 @@ type Service struct {
 	auth AuthGenerator
 }
 
-type RegisterRequest struct {
-	Name        string `json:"name"`
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-type UserInfo struct {
-	ID          uint   `json:"id"`
-	PhoneNumber string `json:"phone_number"`
-	Name        string `json:"name"`
-}
-type RegisterResponse struct {
-	User UserInfo `json:"user"`
-}
-
 func New(authGenerator AuthGenerator, repo Repository) Service {
 	return Service{auth: authGenerator, repo: repo}
 }
 
-func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
-	// TODO: we should verify phone number by verification code
-	//validate phoneNumber
-	if !phoneNumber.IsValid(req.PhoneNumber) {
-		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
-	}
-	//check uniqueness of phone number
+func (s Service) Register(req dto.RegisterRequest) (dto.RegisterResponse, error) {
 
-	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
-		if err != nil {
-			return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
-		}
-		if !isUnique {
-			return RegisterResponse{}, fmt.Errorf("phone number is not unique ")
-		}
-	}
-
-	//validate name
-	if len(req.Name) < 3 {
-		return RegisterResponse{}, fmt.Errorf("name length should be greater than 3")
-	}
-	// validate password
-	// TODO: check password with regex pattern
-	if len(req.Password) < 8 {
-		return RegisterResponse{}, fmt.Errorf("password length should be greater than 8")
-	}
 	//TODO : replace md5
 	//create new usr in storage
 	user := entity.User{
@@ -76,12 +37,13 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		Name:        req.Name,
 		Password:    GetMd5(req.Password),
 	}
+
 	createdUser, err := s.repo.Register(user)
 	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return dto.RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	//return create new user
-	return RegisterResponse{UserInfo{
+	return dto.RegisterResponse{User: dto.UserInfo{
 		ID:          createdUser.ID,
 		Name:        createdUser.Name,
 		PhoneNumber: createdUser.PhoneNumber,
@@ -98,8 +60,8 @@ type Token struct {
 	RefreshToken string `json:"refresh_token"`
 }
 type LoginResponse struct {
-	User   UserInfo `json:"user"`
-	Tokens Token    `json:"token"`
+	User   dto.UserInfo `json:"user"`
+	Tokens Token        `json:"token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -131,7 +93,7 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	}
 	//return ok
 	return LoginResponse{
-		User: UserInfo{
+		User: dto.UserInfo{
 			ID:          user.ID,
 			PhoneNumber: user.PhoneNumber,
 			Name:        user.Name,
