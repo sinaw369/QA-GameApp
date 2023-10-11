@@ -3,7 +3,6 @@ package httpserver
 import (
 	"Q/A-GameApp/dto"
 	"Q/A-GameApp/pkg/httpmsg"
-	"Q/A-GameApp/service/userservise"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -14,13 +13,12 @@ func (s Server) userRegister(ctx echo.Context) error {
 	if err := ctx.Bind(&Req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
-	if err, fieldErr := s.uservalidator.ValidateRegisterRequest(Req); err != nil {
+	if fieldErr, err := s.uservalidator.ValidateRegisterRequest(Req); err != nil {
 		msg, code := httpmsg.Error(err)
 		return ctx.JSON(code, echo.Map{
 			"message": msg,
 			"error":   fieldErr,
 		})
-		return echo.NewHTTPError(code, msg)
 	}
 	resp, err := s.userSvc.Register(Req)
 	if err != nil {
@@ -29,7 +27,7 @@ func (s Server) userRegister(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, resp)
 }
 func (s Server) userLogin(ctx echo.Context) error {
-	var req userservise.LoginRequest
+	var req dto.LoginRequest
 	if err := ctx.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
@@ -47,7 +45,7 @@ func (s Server) userProfile(ctx echo.Context) error {
 		msg, code := httpmsg.Error(err)
 		return echo.NewHTTPError(code, msg)
 	}
-	resp, err := s.userSvc.Profile(userservise.ProfileRequest{UserID: claims.UserID})
+	resp, err := s.userSvc.Profile(dto.ProfileRequest{UserID: claims.UserID})
 	if err != nil {
 		msg, code := httpmsg.Error(err)
 		return echo.NewHTTPError(code, msg)

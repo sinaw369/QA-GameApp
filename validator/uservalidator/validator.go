@@ -19,7 +19,7 @@ type Validator struct {
 func New(repo Repository) Validator {
 	return Validator{repo: repo}
 }
-func (v Validator) ValidateRegisterRequest(req dto.RegisterRequest) (error, map[string]string) {
+func (v Validator) ValidateRegisterRequest(req dto.RegisterRequest) (map[string]string, error) {
 	const op = "UserValidator.validateRegisterRequest"
 	if err := validation.ValidateStruct(&req,
 		validation.Field(&req.Name, validation.Required, validation.Length(3, 50)),
@@ -40,8 +40,8 @@ func (v Validator) ValidateRegisterRequest(req dto.RegisterRequest) (error, map[
 			}
 		}
 
-		return richerror.New(op).WhitMessage(errmsg.ErrorMsgInvalidInput).WhitKind(richerror.KindInvalid).
-			WhitMeta(map[string]interface{}{"request:": req}).WhitWarpError(err), fieldErr
+		return fieldErr, richerror.New(op).WhitMessage(errmsg.ErrorMsgInvalidInput).WhitKind(richerror.KindInvalid).
+			WhitMeta(map[string]interface{}{"request:": req}).WhitWarpError(err)
 	}
 
 	return nil, nil
