@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"Q/A-GameApp/config"
+	"Q/A-GameApp/delivery/httpserver/userhandler"
 	"Q/A-GameApp/service/authservice"
 	"Q/A-GameApp/service/userservise"
 	"Q/A-GameApp/validator/uservalidator"
@@ -11,18 +12,14 @@ import (
 )
 
 type Server struct {
-	config        config.Config
-	authSvc       authservice.Service
-	userSvc       userservise.Service
-	uservalidator uservalidator.Validator
+	config      config.Config
+	userHandler userhandler.Handler
 }
 
 func New(config config.Config, authSvc authservice.Service, userSvc userservise.Service, uservalidator uservalidator.Validator) Server {
 	return Server{
-		config:        config,
-		authSvc:       authSvc,
-		userSvc:       userSvc,
-		uservalidator: uservalidator,
+		config:      config,
+		userHandler: userhandler.New(authSvc, userSvc, uservalidator),
 	}
 }
 func (s Server) Server() {
@@ -32,11 +29,7 @@ func (s Server) Server() {
 	e.Use(middleware.Recover())
 	//routes
 	e.GET("/health-check", s.healthCheck)
-
-	userGroups := e.Group("/users")
-	userGroups.POST("/register", s.userRegister)
-	userGroups.POST("/login", s.userLogin)
-	userGroups.GET("/profile", s.userProfile)
+	s.userHandler.SetUserRoute(e)
 	// start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", s.config.HTTPServer.Port)))
 }

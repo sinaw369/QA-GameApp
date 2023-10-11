@@ -27,7 +27,7 @@ func setupServices(cfg config.Config) (authservice.Service, userservise.Service,
 }
 func main() {
 	cfg := config.Config{
-		HTTPServer: config.HTTPServer{Port: 8080},
+		HTTPServer: config.HTTPServer{Port: 7575},
 		Auth: authservice.Config{
 			SignKey:               JwtSignKey,
 			AccessExpirationTime:  AccessTokenExpireDuration,

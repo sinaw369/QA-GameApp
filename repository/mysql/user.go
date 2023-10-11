@@ -31,16 +31,17 @@ func (d *MySqlDB) Register(u entity.User) (entity.User, error) {
 	u.ID = uint(id)
 	return u, nil
 }
-func (d *MySqlDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, bool, error) {
+func (d *MySqlDB) GetUserByPhoneNumber(phoneNumber string) (entity.User, error) {
 	row := d.db.QueryRow(`SELECT * FROM users WHERE phone_number = ?`, phoneNumber)
 	user, err := scanUser(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entity.User{}, false, nil
+			return entity.User{}, richerror.New("mysql.GetUserByPhoneNumber").WhitMessage(errmsg.ErrorMsgNotFound).WhitKind(richerror.KindNotFound)
 		}
-		return entity.User{}, false, richerror.New("mysql.GetUserByPhoneNumber").WhitMessage(errmsg.ErrorMsgCantQuery).WhitKind(richerror.KindNotFound)
+		return entity.User{},
+			richerror.New("mysql.GetUserByPhoneNumber").WhitMessage(errmsg.ErrorMsgCantQuery).WhitKind(richerror.KindUnexpected)
 	}
-	return user, true, nil
+	return user, nil
 }
 func (d *MySqlDB) GetUserByID(userID uint) (entity.User, error) {
 
